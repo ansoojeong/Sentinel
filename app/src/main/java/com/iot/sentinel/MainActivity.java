@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
 
     public void onEvent_Type(String msg) {
         switch (msg) {
-            //주민번호로 본인 회원번호 조회
+            //주민번호로 본인 회원번호 조회하기
             case "GetUserId_Select":
                 Call<ResponseBody> call1 = apiService.postResidentNum(residentNum);
                 call1.enqueue(new Callback<ResponseBody>() {

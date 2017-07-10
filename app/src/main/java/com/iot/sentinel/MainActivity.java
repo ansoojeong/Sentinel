@@ -11,6 +11,10 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 import okhttp3.ResponseBody;
@@ -35,7 +39,7 @@ public class MainActivity extends Activity {
     DialogActivity dialogActivity;
 
     String residentNum = "901205";
-    int userID = 3;
+    int userID = 1;
     // DB에 저장할 시간타입과 자바의 타입이 달라서 String 으로 보내고 DB에서 DATE 타입으로 변환
     String measureTime = "";
     int heartRate = 30;
@@ -77,7 +81,7 @@ public class MainActivity extends Activity {
                         getApplicationContext(),
                         "주민번호를 입력하셨습니다.",
                         Toast.LENGTH_SHORT).show();
-                status.append("입력");
+                status.append("입력\n");
             }
         });
 
@@ -137,6 +141,22 @@ public class MainActivity extends Activity {
                 call1.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        String jsonData = null;
+                        try {
+                            jsonData = response.body().string();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println(jsonData);
+
+                        try {
+                            JSONArray jArray = new JSONArray(jsonData);   // JSONArray 생성
+                            JSONObject jObject = jArray.getJSONObject(0);  // JSONObject 추출
+                            userID = jObject.getInt("userID");
+                            System.out.println(userID);
+                        } catch (JSONException e1) {
+                            e1.printStackTrace();
+                        }
                     }
 
                     @Override
@@ -190,6 +210,7 @@ public class MainActivity extends Activity {
                 });
                 break;
         }
+
     }
 
     private void executeGetMessage() {

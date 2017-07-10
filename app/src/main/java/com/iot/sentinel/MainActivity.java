@@ -3,7 +3,6 @@ package com.iot.sentinel;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
-import android.content.DialogInterface.OnDismissListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -30,7 +29,7 @@ public class MainActivity extends Activity {
     private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_INSERT = "RiskStatusRecords_Insert"; //비정상 맥박저장
     private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_SELECT = "RiskStatusRecords_Select"; // 비정상맥박 통계 조회
 
-    TextView addNumber;
+    TextView showUserID;
     Button connect;
     Button statistics;
     Button riskStatus_insert;
@@ -59,7 +58,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        addNumber = (TextView) findViewById(R.id.addNumber);
+        showUserID = (TextView) findViewById(R.id.showUserID);
         connect = (Button) findViewById(R.id.connect);
         statistics = (Button) findViewById(R.id.statistics);
         riskStatus_insert = (Button) findViewById(R.id.riskStatus_insert);
@@ -71,26 +70,26 @@ public class MainActivity extends Activity {
 
         dialogActivity.show();
 
-        dialogActivity.setOnDismissListener(new OnDismissListener() {
+        /*dialogActivity.setOnDismissListener(new OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface arg0) {
                 residentNum = dialogActivity.getNumber();
 
-                addNumber.setText(residentNum);
+                showUserID.setText(residentNum);
                 Toast.makeText(
                         getApplicationContext(),
                         "주민번호를 입력하셨습니다.",
                         Toast.LENGTH_SHORT).show();
                 status.append("입력\n");
             }
-        });
+        });*/
 
         dialogActivity.setOnCancelListener(new OnCancelListener() {
             @Override
             public void onCancel(DialogInterface arg0) {
                 Toast.makeText(
                         getApplicationContext(),
-                        "즐겨찾기를 추가하지 않았습니다.",
+                        "주민번호를 입력하지 않았습니다.",
                         Toast.LENGTH_SHORT).show();
             }
         });
@@ -150,10 +149,11 @@ public class MainActivity extends Activity {
                         System.out.println(jsonData);
 
                         try {
-                            JSONArray jArray = new JSONArray(jsonData);   // JSONArray 생성
-                            JSONObject jObject = jArray.getJSONObject(0);  // JSONObject 추출
+                            JSONArray jArray = new JSONArray("[" + jsonData + "]");
+                            JSONObject jObject = jArray.getJSONObject(0);
                             userID = jObject.getInt("userID");
                             System.out.println(userID);
+                            showUserID.append(userID + "\n");
                         } catch (JSONException e1) {
                             e1.printStackTrace();
                         }

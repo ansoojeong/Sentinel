@@ -24,21 +24,30 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends Activity {
-    private static final String TO_SERVER_REQUEST_MY_USERID = "GetUserId_Select";  //주민등록번호로 UserId 가져오기
-    private static final String TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT = "HeartRateStatus"; //맥박 1분씩저장
-    private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_INSERT = "RiskStatusRecords_Insert"; //비정상 맥박저장
-    private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_SELECT = "RiskStatusRecords_Select"; // 비정상맥박 통계 조회
+    //주민번호로 본인 회원번호 조회하기
+    private static final String TO_SERVER_REQUEST_MY_USERID = "GetUserId_Select";
+    //맥박상태 1분간격으로 저장하기
+    private static final String TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT = "HeartRateStatus_Insert";
+    //맥박 시간별 통계 가져오기
+    private static final String TO_SERVER_REQUEST_HEARTRATE_STATISTICS_SELECT_BY_HOURS = "Statistics_Select_By_Hours";
+    //맥박 날짜별 통계 가져오기
+    private static final String TO_SERVER_REQUEST_HEARTRATE_STATISTICS_SELECT_BY_DATES = "Statistics_Select_By_Dates";
+    //비정상 맥박정보 등록하기
+    private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_INSERT = "RiskStatusRecords_Insert";
+    //비정상 맥박정보 가져오기
+    private static final String TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_SELECT = "RiskStatusRecords_Select";
 
     TextView showUserID;
     Button connect;
-    Button statistics;
-    Button riskStatus_insert;
-    Button riskStatus_select;
-    TextView status;
+    Button status_Insert;
+    Button statistics_By_Hours;
+    Button statistics_By_Dates;
+    Button riskStatus_Insert;
+    Button riskStatus_Select;
     DialogActivity dialogActivity;
 
     String residentNum = "901205";
-    int userID = 1;
+    int userID;
     // DB에 저장할 시간타입과 자바의 타입이 달라서 String 으로 보내고 DB에서 DATE 타입으로 변환
     String measureTime = "";
     int heartRate = 30;
@@ -60,29 +69,24 @@ public class MainActivity extends Activity {
 
         showUserID = (TextView) findViewById(R.id.showUserID);
         connect = (Button) findViewById(R.id.connect);
-        statistics = (Button) findViewById(R.id.statistics);
-        riskStatus_insert = (Button) findViewById(R.id.riskStatus_insert);
-        riskStatus_select = (Button) findViewById(R.id.riskStatus_select);
-        status = (TextView) findViewById(R.id.status);
+        status_Insert = (Button) findViewById(R.id.status_Insert);
+        statistics_By_Hours = (Button) findViewById(R.id.statistics_By_Hours);
+        statistics_By_Dates = (Button) findViewById(R.id.statistics_By_Dates);
+        riskStatus_Insert = (Button) findViewById(R.id.riskStatus_Insert);
+        riskStatus_Select = (Button) findViewById(R.id.riskStatus_Select);
 
         dialogActivity = new DialogActivity(MainActivity.this);
         dialogActivity.setTitle("주민번호 입력");
 
         dialogActivity.show();
 
-        /*dialogActivity.setOnDismissListener(new OnDismissListener() {
+        dialogActivity.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface arg0) {
                 residentNum = dialogActivity.getNumber();
-
                 showUserID.setText(residentNum);
-                Toast.makeText(
-                        getApplicationContext(),
-                        "주민번호를 입력하셨습니다.",
-                        Toast.LENGTH_SHORT).show();
-                status.append("입력\n");
             }
-        });*/
+        });
 
         dialogActivity.setOnCancelListener(new OnCancelListener() {
             @Override
@@ -102,20 +106,36 @@ public class MainActivity extends Activity {
             }
         });
 
-        statistics.setOnClickListener(new View.OnClickListener() {
+        status_Insert.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT);
             }
         });
 
-        riskStatus_insert.setOnClickListener(new View.OnClickListener() {
+        statistics_By_Hours.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATISTICS_SELECT_BY_HOURS);
+            }
+        });
+
+        statistics_By_Dates.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATISTICS_SELECT_BY_DATES);
+                System.out.println(userID);
+            }
+        });
+
+        riskStatus_Insert.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 executeSendMessage(TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_INSERT);
             }
         });
-        riskStatus_select.setOnClickListener(new View.OnClickListener() {
+
+        riskStatus_Select.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 executeSendMessage(TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_SELECT);
@@ -136,7 +156,7 @@ public class MainActivity extends Activity {
         switch (msg) {
             //주민번호로 본인 회원번호 조회하기
             case "GetUserId_Select":
-                Call<ResponseBody> call1 = apiService.postResidentNum(residentNum);
+                Call<ResponseBody> call1 = apiService.post_ResidentNum(residentNum);
                 call1.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -153,7 +173,7 @@ public class MainActivity extends Activity {
                             JSONObject jObject = jArray.getJSONObject(0);
                             userID = jObject.getInt("userID");
                             System.out.println(userID);
-                            showUserID.append(userID + "\n");
+                            showUserID.setText(userID);
                         } catch (JSONException e1) {
                             e1.printStackTrace();
                         }
@@ -166,11 +186,39 @@ public class MainActivity extends Activity {
                 break;
 
             //맥박상태 1분간격으로 저장하기
-            case "HeartRateStatus":
+            case "HeartRateStatus_Insert":
                 System.out.println(measureTime);
                 measureTime = nowTime.get_the_current_time();
-                Call<ResponseBody> call2 = apiService.postHeartRateStatus(measureTime, userID, heartRate);
+                Call<ResponseBody> call2 = apiService.post_HeartRateStatus_Insert(measureTime, userID, heartRate);
                 call2.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    }
+                });
+                break;
+
+            //맥박 시간별 통계 가져오기
+            case "Statistics_Select_By_Hours":
+                Call<ResponseBody> call3 = apiService.post_HeartRateStatistics_Select_By_Hours(userID);
+                call3.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    }
+                });
+                break;
+
+            //맥박 날짜별 통계 가져오기
+            case "Statistics_Select_By_Dates":
+                Call<ResponseBody> call4 = apiService.post_HeartRateStatistics_Select_By_Dates(userID);
+                call4.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     }
@@ -184,8 +232,8 @@ public class MainActivity extends Activity {
             //비정상 맥박정보 등록하기
             case "RiskStatusRecords_Insert":
                 riskStatusTime = nowTime.get_the_current_time();
-                Call<ResponseBody> call3 = apiService.postRiskStatusRecords_Insert(userID, riskStatusTime, riskLevel, heartRateStatus);
-                call3.enqueue(new Callback<ResponseBody>() {
+                Call<ResponseBody> call5 = apiService.post_RiskStatusRecords_Insert(userID, riskStatusTime, riskLevel, heartRateStatus);
+                call5.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     }
@@ -196,10 +244,10 @@ public class MainActivity extends Activity {
                 });
                 break;
 
-            /*비정상 맥박상태 통계 가져오기*/
+            //비정상 맥박정보 가져오기
             case "RiskStatusRecords_Select":
-                Call<ResponseBody> call4 = apiService.postRiskStatusRecords_Select(userID);
-                call4.enqueue(new Callback<ResponseBody>() {
+                Call<ResponseBody> call6 = apiService.post_RiskStatusRecords_Select(userID);
+                call6.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     }

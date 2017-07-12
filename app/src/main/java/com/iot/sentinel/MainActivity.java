@@ -124,7 +124,6 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATISTICS_SELECT_BY_DATES);
-                System.out.println(userID);
             }
         });
 
@@ -173,7 +172,7 @@ public class MainActivity extends Activity {
                             JSONObject jObject = jArray.getJSONObject(0);
                             userID = jObject.getInt("userID");
                             System.out.println(userID);
-                            showUserID.setText(userID);
+                            showUserID.setText(userID+"");
                         } catch (JSONException e1) {
                             e1.printStackTrace();
                         }

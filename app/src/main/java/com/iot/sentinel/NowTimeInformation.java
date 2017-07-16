@@ -11,7 +11,7 @@ public class NowTimeInformation {
     public String get_the_current_time(){
 
         Calendar today = Calendar.getInstance();
-        today.add(today.HOUR ,+9);
+       // today.add(today.HOUR ,+9);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String nowTime = simpleDateFormat.format(today.getTime());
 

@@ -1,6 +1,7 @@
 package com.iot.sentinel;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
@@ -8,7 +9,9 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.support.v7.app.AlertDialog;
+import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -84,10 +87,8 @@ public class MainActivity extends Activity {
      */
     AppService _appService = null;
 
-
     TextView showUserID;
     TextView showNowHeartRate;
-    Button connect;
     Button statistics_By_Hours;
     Button statistics_By_Daily;
     Button riskStatus_Select;
@@ -100,7 +101,7 @@ public class MainActivity extends Activity {
 
     DialogActivity dialogActivity;
 
-    String residentNum = "901205";
+    String residentNum = "000000-0000000";
     String name;
     int userID;
     // DB에 저장할 시간타입과 자바의 타입이 달라서 String 으로 보내고 DB에서 DATE 타입으로 변환
@@ -128,14 +129,23 @@ public class MainActivity extends Activity {
     //시간 1분씩 재는 타이머
     Clock _clock = new Clock();
 
+    //신고 - 문자보내기
+    SmsManager smsManager;
 
+    //경고시 진동
+    Vibrator _vibrator;
+    long[] pattern = {0, 200, 200, 200, 200, 200};
+
+
+    /**
+     * onCreate start
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         showUserID = (TextView) findViewById(R.id.showUserID);
-        connect = (Button) findViewById(R.id.connect);
 
         statistics_By_Hours = (Button) findViewById(R.id.statistics_By_Hours);
         statistics_By_Daily = (Button) findViewById(R.id.statistics_By_Daily);
@@ -147,6 +157,13 @@ public class MainActivity extends Activity {
         textview_filed2 = (TextView) findViewById(R.id.textView_filed2);
         showNowHeartRate = (TextView) findViewById(R.id.textView_nowHeartRate);
 
+        /**
+         * 문자
+         */
+        smsManager = SmsManager.getDefault();
+
+        //진동
+        _vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
         /**
          *  GPS
@@ -176,6 +193,8 @@ public class MainActivity extends Activity {
             public void onDismiss(DialogInterface arg0) {
                 residentNum = dialogActivity.getNumber();
                 showUserID.setText(residentNum);
+                System.out.println(residentNum);
+                executeSendMessage(TO_SERVER_REQUEST_MY_USERID);
             }
         });
 
@@ -189,15 +208,13 @@ public class MainActivity extends Activity {
             }
         });
 
-        connect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                System.out.println(residentNum);
-                executeSendMessage(TO_SERVER_REQUEST_MY_USERID);
-
-            }
-        });
-
+//        connect.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                System.out.println(residentNum);
+//                executeSendMessage(TO_SERVER_REQUEST_MY_USERID);
+//            }
+//        });
 
         statistics_By_Hours.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -451,7 +468,6 @@ public class MainActivity extends Activity {
                                 System.out.println("Date : " + term_Date_String[0] + " , " + term_Time_String[0] + " ,  RiskLevel : " + riskLevel_Select + " ,  HeartRate : " + heartRateStatus_Select);
                                 showData.append(term_Date_String[0] + " / " + term_Time_String[0] + "\n");
                                 showData2.append("     " + riskLevel_Select + " / " + heartRateStatus_Select + "\n");
-
                             }
                         } catch (JSONException e1) {
                             e1.printStackTrace();
@@ -499,9 +515,13 @@ public class MainActivity extends Activity {
                     executeSendMessage(TO_SERVER_REQUEST_RISKSTATUS_RECODEDS_INSERT);
                     executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT);
                     _clock.setSec(0);
+                    //신고
+//                    smsManager.sendTextMessage("010-0000-0000", null,
+//                            name + "님 맥박 이상!! \n위치정보 : " + _gpsService.getlatLng().toString(),
+//                            null, null);
                 }
-                //신고
                 break;
+
             case "Yellow":
                 riskLevel = "경고";
                 if (_clock.getSec() > 30) {
@@ -509,7 +529,9 @@ public class MainActivity extends Activity {
                     executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT);
                     _clock.setSec(0);
                 }
+                _vibrator.vibrate(pattern, -1);
                 break;
+
             case "Green":
                 if (_clock.getSec() > 60) {
                     executeSendMessage(TO_SERVER_REQUEST_HEARTRATE_STATUS_INSERT);
@@ -530,7 +552,6 @@ public class MainActivity extends Activity {
             super.handleMessage(msg);
 
             switch (msg.what) {
-
                 case MESSAGE_STATE_CHANGE:
                     if (D) Log.i(TAG, "MESSAGE_STATE_CHANGE : " + msg.arg1);
 
@@ -538,6 +559,7 @@ public class MainActivity extends Activity {
                         case BluetoothService.STATE_CONNECTED:
                             Toast.makeText(getApplicationContext(), "블루투스 연결에 성공하였습니다!", Toast.LENGTH_SHORT).show();
                             break;
+
                         case BluetoothService.STATE_FAIL:
                             Toast.makeText(getApplicationContext(), "블루투스 연결에 실패하였습니다!", Toast.LENGTH_SHORT).show();
                             break;
@@ -556,6 +578,7 @@ public class MainActivity extends Activity {
                         }
                     }
                     break;
+
                 case MESSAGE_WRITE:
                     String writeMessage = null;
                     if (mSelectedBtn == 1) {
@@ -693,11 +716,9 @@ public class MainActivity extends Activity {
         notify();
     }
 
-
     /**
      * GPS 다이얼로그 실행
      */
-
     public void createAlertDialog(String requester) {
         AlertDialog.Builder dig = new AlertDialog.Builder(MainActivity.this);
         dig.setTitle(requester);
